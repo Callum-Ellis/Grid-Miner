@@ -1,5 +1,9 @@
 -Enter username in the game window before game begins. Your highscore is saved under your username through FireBase. 
+
 -Top 3 high scores displayed at end screen. 
+
 -Restart option by pressing R on the end screen.
+
 -Fun RNG! There is a 5% chance for the game to spawn two blocks instead of one. 
+
 -fun sound effect when block is captured/broken/touched :)
