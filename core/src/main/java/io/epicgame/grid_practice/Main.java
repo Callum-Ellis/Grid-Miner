@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.JsonValue;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 
 public class Main implements ApplicationListener {
     private ShapeRenderer sr;
@@ -183,6 +184,12 @@ public class Main implements ApplicationListener {
                 gameOverHandled = true;
                 saveScoreToFirebase(username, score);
             }
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)
+                || isRestartButtonClicked()) {
+                restartGame();
+            }
+
             batch.begin();
             font.setColor(Color.WHITE);
             drawCentered("Time's up!", 300);
@@ -199,8 +206,17 @@ public class Main implements ApplicationListener {
                 }
             }
             if (firebaseStatus != null) {
-                drawCentered(firebaseStatus, topScoreCount > 0 ? 25 : 125);
+                drawCentered(firebaseStatus, topScoreCount > 0 ? 145 : 125);
             }
+            batch.end();
+
+            sr.begin(ShapeRenderer.ShapeType.Filled);
+            sr.setColor(Color.FIREBRICK);
+            sr.rect(220, 25, 200, 45);
+            sr.end();
+            batch.begin();
+            font.setColor(Color.WHITE);
+            drawCentered("Press R or Click to Restart", 55);
             batch.end();
         }
     }
@@ -226,13 +242,46 @@ public class Main implements ApplicationListener {
     }
 
     private void spawnGoldBlock() {
-        int goldRow;
-        int goldCol;
-        do {
-            goldRow = MathUtils.random(0, grid.length - 1);
-            goldCol = MathUtils.random(0, grid[0].length - 1);
-        } while (grid[goldRow][goldCol] != 0);
-        grid[goldRow][goldCol] = 2;
+        int blockCount = MathUtils.random(1, 20) == 1 ? 2 : 1;
+
+        for (int i = 0; i < blockCount; i++) {
+            int goldRow;
+            int goldCol;
+            do {
+                goldRow = MathUtils.random(0, grid.length - 1);
+                goldCol = MathUtils.random(0, grid[0].length - 1);
+            } while (grid[goldRow][goldCol] != 0);
+            grid[goldRow][goldCol] = 2;
+        }
+    }
+
+    private boolean isRestartButtonClicked() {
+        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            return false;
+        }
+        float screenY = Gdx.graphics.getHeight() - Gdx.input.getY();
+        return Gdx.input.getX() >= 220 && Gdx.input.getX() <= 420
+            && screenY >= 25 && screenY <= 70;
+    }
+
+    private void restartGame() {
+        time = 15f;
+        score = 0;
+        gameOverHandled = false;
+        gameStarted = true;
+
+        for (int row = 0; row < grid.length; row++) {
+            Arrays.fill(grid[row], 0);
+        }
+
+        playerRow = MathUtils.random(0, grid.length - 1);
+        playerCol = MathUtils.random(0, grid[0].length - 1);
+        grid[playerRow][playerCol] = 1;
+        spawnGoldBlock();
+
+        hasUserHighScore = false;
+        firebaseStatus = "Game restarted! Try hard Gamer!";
+        getUserHighScore(username);
     }
 
     private void requestUsername() {
