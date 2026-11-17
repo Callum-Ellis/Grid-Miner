@@ -54,6 +54,13 @@ public class Main implements ApplicationListener {
         {0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0}
     };
+    private final boolean[][] suppressReplacement = {
+        {false, false, false, false, false},
+        {false, false, false, false, false},
+        {false, false, false, false, false},
+        {false, false, false, false, false},
+        {false, false, false, false, false}
+    };
     private int playerRow;
     private int playerCol;
 
@@ -141,16 +148,18 @@ public class Main implements ApplicationListener {
                 if (grid[tempRow][tempCol] == 2) {
                     score++;
                     grid[tempRow][tempCol] = 0;
+                    boolean shouldSpawnReplacement = !suppressReplacement[tempRow][tempCol];
+                    suppressReplacement[tempRow][tempCol] = false;
                     goldCollectedSound.stop();
                     goldCollectedSound.play();
-                    collectedGold = true;
+                    collectedGold = shouldSpawnReplacement;
                 }
                 grid[playerRow][playerCol] = 0;
                 grid[tempRow][tempCol] = 1;
                 playerRow = tempRow;
                 playerCol = tempCol;
                 if (collectedGold) {
-                    spawnGoldBlock();
+                    spawnReplacementGoldBlock();
                 }
             }
 
@@ -212,11 +221,13 @@ public class Main implements ApplicationListener {
 
             sr.begin(ShapeRenderer.ShapeType.Filled);
             sr.setColor(Color.FIREBRICK);
-            sr.rect(220, 25, 200, 45);
+            sr.rect(Gdx.graphics.getWidth() - 210, Gdx.graphics.getHeight() - 55, 200, 45);
             sr.end();
             batch.begin();
             font.setColor(Color.WHITE);
-            drawCentered("Press R or Click to Restart", 55);
+            font.draw(batch, "Restart (R)",
+                Gdx.graphics.getWidth() - 160,
+                Gdx.graphics.getHeight() - 27);
             batch.end();
         }
     }
@@ -242,17 +253,29 @@ public class Main implements ApplicationListener {
     }
 
     private void spawnGoldBlock() {
-        int blockCount = MathUtils.random(1, 20) == 1 ? 2 : 1;
+        spawnGoldBlockAtRandomEmptyCell();
+    }
 
-        for (int i = 0; i < blockCount; i++) {
-            int goldRow;
-            int goldCol;
-            do {
-                goldRow = MathUtils.random(0, grid.length - 1);
-                goldCol = MathUtils.random(0, grid[0].length - 1);
-            } while (grid[goldRow][goldCol] != 0);
-            grid[goldRow][goldCol] = 2;
+    private void spawnReplacementGoldBlock() {
+        spawnGoldBlockAtRandomEmptyCell(false);
+        if (MathUtils.random(1, 20) == 1) {
+            spawnGoldBlockAtRandomEmptyCell(true);
         }
+    }
+
+    private void spawnGoldBlockAtRandomEmptyCell() {
+        spawnGoldBlockAtRandomEmptyCell(false);
+    }
+
+    private void spawnGoldBlockAtRandomEmptyCell(boolean suppressReplacementSpawn) {
+        int goldRow;
+        int goldCol;
+        do {
+            goldRow = MathUtils.random(0, grid.length - 1);
+            goldCol = MathUtils.random(0, grid[0].length - 1);
+        } while (grid[goldRow][goldCol] != 0);
+        grid[goldRow][goldCol] = 2;
+        suppressReplacement[goldRow][goldCol] = suppressReplacementSpawn;
     }
 
     private boolean isRestartButtonClicked() {
@@ -260,8 +283,12 @@ public class Main implements ApplicationListener {
             return false;
         }
         float screenY = Gdx.graphics.getHeight() - Gdx.input.getY();
-        return Gdx.input.getX() >= 220 && Gdx.input.getX() <= 420
-            && screenY >= 25 && screenY <= 70;
+        float buttonX = Gdx.graphics.getWidth() - 210;
+        float buttonY = Gdx.graphics.getHeight() - 55;
+        return Gdx.input.getX() >= buttonX
+            && Gdx.input.getX() <= buttonX + 200
+            && screenY >= buttonY
+            && screenY <= buttonY + 45;
     }
 
     private void restartGame() {
@@ -272,6 +299,7 @@ public class Main implements ApplicationListener {
 
         for (int row = 0; row < grid.length; row++) {
             Arrays.fill(grid[row], 0);
+            Arrays.fill(suppressReplacement[row], false);
         }
 
         playerRow = MathUtils.random(0, grid.length - 1);
